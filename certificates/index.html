@@ -273,18 +273,18 @@
             return 'https://wa.me/' + WHATSAPP_NUMBER + '?text=' + encodeURIComponent(text);
         }
 
-        function formatErrorMessage(message) {
-            var link = buildWhatsAppLink(input.value, message);
+        function formatErrorMessage(message, helpMessage) {
+            var link = buildWhatsAppLink(input.value, helpMessage);
             return (
                 '<div><strong>' + message + '</strong></div>' +
                 '<div style="margin-top:12px; display:flex; gap:12px; flex-wrap:wrap;">' +
-                    '<a class="download" href="' + link + '" target="_blank" rel="noopener noreferrer">Message on WhatsApp</a>' +
+                    '<a class="download" href="' + link + '" target="_blank" rel="noopener noreferrer">Message support on WhatsApp</a>' +
                 '</div>'
             );
         }
 
-        function setError(message) {
-            setResult('error', formatErrorMessage(message));
+        function setError(message, helpMessage) {
+            setResult('error', formatErrorMessage(message, helpMessage));
         }
 
         function findColumn(headers, names) {
@@ -392,7 +392,10 @@
 
             const studentId = normalizeId(input.value);
             if (!studentId) {
-                setError('Please enter a valid student ID with no spaces.');
+                setError(
+                    'Please enter a valid student ID with no spaces.',
+                    'Hello, I need help with my workshop certificate. My student ID is ' + input.value.trim() + '.'
+                );
                 return;
             }
 
@@ -405,7 +408,10 @@
                 const match = rows.find((row) => row.id === studentId && row.name.toLowerCase() !== 'not found');
 
                 if (!match) {
-                    setError('Sorry, this ID was not found in the final attendance list.');
+                    setError(
+                        'Sorry, this ID was not found in the final attendance list.',
+                        'Hello, I checked my workshop certificate portal and my student ID was not found. Please help me verify it. My student ID is ' + studentId + '.'
+                    );
                     return;
                 }
 
@@ -414,7 +420,10 @@
 
                 setResult('success', `${displayName}Your certificate is ready.<br><a class="download" href="${certificateUrl}" download>Download PDF</a>`);
             } catch (error) {
-                setError(`${error.message} Please contact the organizer if the problem continues.`);
+                setError(
+                    'We could not load the certificate list right now.',
+                    'Hello, I tried to download my workshop certificate but the portal is not working. Please check my certificate and help me. My student ID is ' + studentId + '.'
+                );
             } finally {
                 button.disabled = false;
                 button.textContent = 'Check';
