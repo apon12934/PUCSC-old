@@ -266,9 +266,6 @@
 
         function buildWhatsAppLink(studentId, message) {
             var text = message || 'Hello, I need help downloading my workshop certificate.';
-            if (studentId) {
-                text += ' My student ID is ' + studentId + '.';
-            }
 
             return 'https://wa.me/' + WHATSAPP_NUMBER + '?text=' + encodeURIComponent(text);
         }
