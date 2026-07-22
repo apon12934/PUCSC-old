@@ -9,7 +9,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Product+Sans:wght@400;500;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
     <style>
         :root {
             --navy: #070840;
@@ -240,7 +239,7 @@
     </main>
 
     <script>
-        const ATTENDANCE_XLSX_URL = './data/Workshop Attendance.xlsx';
+        const ATTENDANCE_CSV_URL = './data/Workshop Attendance.csv';
         const CERTIFICATE_FOLDER = './pdfs/';
         const WHATSAPP_NUMBER = '8801927041100';
 
@@ -296,23 +295,16 @@
         async function loadAttendance() {
             if (attendanceRows) return attendanceRows;
 
-            if (!window.XLSX) {
-                throw new Error('Excel reader is still loading. Please try again in a moment.');
-            }
-
-            const response = await fetch(`${ATTENDANCE_XLSX_URL}?v=${Date.now()}`, { cache: 'no-store' });
+            const response = await fetch(`${ATTENDANCE_CSV_URL}?v=${Date.now()}`, { cache: 'no-store' });
             if (!response.ok) {
-                throw new Error('Attendance Excel file could not be loaded.');
+                throw new Error('Attendance CSV file could not be loaded.');
             }
 
-            const workbookData = await response.arrayBuffer();
-            const workbook = XLSX.read(workbookData, { type: 'array' });
-            const sheetName = workbook.SheetNames.includes('Attendance') ? 'Attendance' : workbook.SheetNames[0];
-            const sheet = workbook.Sheets[sheetName];
-            const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+            const csvText = await response.text();
+            const rows = parseCSV(csvText);
 
             if (rows.length < 2) {
-                throw new Error('Attendance Excel file is empty.');
+                throw new Error('Attendance CSV file is empty.');
             }
 
             const headers = rows[0].map((header) => String(header || ''));
@@ -320,7 +312,7 @@
             const nameColumn = findColumn(headers, ['full name', 'name']);
 
             if (idColumn === -1) {
-                throw new Error('Attendance Excel file needs a Student ID column.');
+                throw new Error('Attendance CSV file needs a Student ID column.');
             }
 
             attendanceRows = rows.slice(1).map((row) => ({
@@ -329,6 +321,58 @@
             })).filter((row) => row.id);
 
             return attendanceRows;
+        }
+
+        function parseCSV(text) {
+            const lines = [];
+            let field = '';
+            let row = [];
+            let inQuotes = false;
+
+            for (let i = 0; i < text.length; i++) {
+                const ch = text.charAt(i);
+                const next = i + 1 < text.length ? text.charAt(i + 1) : '';
+
+                if (ch === '"') {
+                    if (inQuotes && next === '"') {
+                        field += '"';
+                        i++;
+                    } else {
+                        inQuotes = !inQuotes;
+                    }
+                    continue;
+                }
+
+                if (ch === ',' && !inQuotes) {
+                    row.push(field);
+                    field = '';
+                    continue;
+                }
+
+                if ((ch === '\n' || ch === '\r') && !inQuotes) {
+                    if (ch === '\r' && next === '\n') {
+                        i++;
+                    }
+                    row.push(field);
+                    field = '';
+                    if (row.length > 1 || (row.length === 1 && row[0] !== '')) {
+                        lines.push(row);
+                    }
+                    row = [];
+                    continue;
+                }
+
+                field += ch;
+            }
+
+            if (field !== '' || row.length) {
+                row.push(field);
+                if (row.length > 1 || (row.length === 1 && row[0] !== '')) {
+                    lines.push(row);
+                }
+            }
+
+            return lines;
         }
 
         function setResult(type, html) {
