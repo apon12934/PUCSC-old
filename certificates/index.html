@@ -221,12 +221,12 @@
             </div>
 
             <h1 id="page-title">Download Certificate</h1>
-            <p class="intro">Enter your student ID. If your ID is in the final attendance list, your certificate download will appear here.</p>
+            <p class="intro">Enter your student ID without spaces. If your ID is in the final attendance list, your certificate download will appear here.</p>
 
             <form id="certificateForm" class="form">
                 <label for="studentId">Student ID</label>
                 <div class="input-row">
-                    <input id="studentId" name="studentId" type="text" inputmode="numeric" autocomplete="off" placeholder="Example: 253842038" required>
+                    <input id="studentId" name="studentId" type="text" inputmode="numeric" autocomplete="off" placeholder="Example: 253842038 (no spaces)" required>
                     <button id="submitButton" type="submit">Check</button>
                 </div>
             </form>
@@ -235,13 +235,14 @@
                 Upload attendance as <strong>certificates/data/Workshop Attendance.xlsx</strong> and certificate files as <strong>certificates/pdfs/StudentID.pdf</strong>.
             </div>
 
-            <p class="note">Having trouble? Contact the workshop organizing team with your student ID.</p>
+            <p class="note">Demo: type <strong>253842038</strong> exactly like that, then click <strong>Check</strong>. Do not add spaces.</p>
         </section>
     </main>
 
     <script>
         const ATTENDANCE_XLSX_URL = './data/Workshop Attendance.xlsx';
         const CERTIFICATE_FOLDER = './pdfs/';
+        const WHATSAPP_NUMBER = '8801927041100';
 
         const form = document.getElementById('certificateForm');
         const input = document.getElementById('studentId');
@@ -262,6 +263,29 @@
             }
 
             return raw.replace(/\.0$/, '').replace(/\D/g, '');
+        }
+
+        function buildWhatsAppLink(studentId, message) {
+            var text = message || 'Hello, I need help downloading my workshop certificate.';
+            if (studentId) {
+                text += ' My student ID is ' + studentId + '.';
+            }
+
+            return 'https://wa.me/' + WHATSAPP_NUMBER + '?text=' + encodeURIComponent(text);
+        }
+
+        function formatErrorMessage(message) {
+            var link = buildWhatsAppLink(input.value, message);
+            return (
+                '<div><strong>' + message + '</strong></div>' +
+                '<div style="margin-top:12px; display:flex; gap:12px; flex-wrap:wrap;">' +
+                    '<a class="download" href="' + link + '" target="_blank" rel="noopener noreferrer">Message on WhatsApp</a>' +
+                '</div>'
+            );
+        }
+
+        function setError(message) {
+            setResult('error', formatErrorMessage(message));
         }
 
         function findColumn(headers, names) {
@@ -312,12 +336,19 @@
             result.innerHTML = html;
         }
 
+        input.addEventListener('input', function () {
+            var cleaned = input.value.replace(/\s+/g, '');
+            if (cleaned !== input.value) {
+                input.value = cleaned;
+            }
+        });
+
         form.addEventListener('submit', async (event) => {
             event.preventDefault();
 
             const studentId = normalizeId(input.value);
             if (!studentId) {
-                setResult('error', 'Please enter a valid student ID.');
+                setError('Please enter a valid student ID with no spaces.');
                 return;
             }
 
@@ -330,7 +361,7 @@
                 const match = rows.find((row) => row.id === studentId && row.name.toLowerCase() !== 'not found');
 
                 if (!match) {
-                    setResult('error', 'Sorry, this ID was not found in the final attendance list.');
+                    setError('Sorry, this ID was not found in the final attendance list.');
                     return;
                 }
 
@@ -339,7 +370,7 @@
 
                 setResult('success', `${displayName}Your certificate is ready.<br><a class="download" href="${certificateUrl}" download>Download PDF</a>`);
             } catch (error) {
-                setResult('error', `${error.message} Please ask the organizer to upload the final attendance Excel file.`);
+                setError(`${error.message} Please contact the organizer if the problem continues.`);
             } finally {
                 button.disabled = false;
                 button.textContent = 'Check';
