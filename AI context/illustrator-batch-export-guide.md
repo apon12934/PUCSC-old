@@ -34,7 +34,7 @@ The template must be saved before running the script, because the script reopens
 
 If your certificate only changes the student name, just keep that one text box linked to `{{NAME}}`. The rest of the design stays fixed.
 
-Your current CSV format with `Student ID` and `Full Name` is already supported by the script.
+Your current CSV format with `Student ID` and `Full Name` is already supported by the script, so you do not need to rename the columns.
 
 ## If you need more control
 
